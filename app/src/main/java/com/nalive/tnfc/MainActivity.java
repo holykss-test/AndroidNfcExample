@@ -3,8 +3,11 @@ package com.nalive.tnfc;
 import android.app.PendingIntent;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.nfc.NdefMessage;
+import android.nfc.NdefRecord;
 import android.nfc.NfcAdapter;
 import android.os.Bundle;
+import android.os.Parcelable;
 import android.support.v7.app.AppCompatActivity;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -36,9 +39,36 @@ public class MainActivity extends AppCompatActivity {
         super.onNewIntent(intent);
 
         if (intent.hasExtra(NfcAdapter.EXTRA_TAG)) {
-            Toast.makeText(this, "NFC intent received", Toast.LENGTH_LONG).show();
+
+            Parcelable[] parcelables = intent.getParcelableArrayExtra(NfcAdapter.EXTRA_NDEF_MESSAGES);
+
+            int parcelablesLength = parcelables != null ? parcelables.length : 0;
+
+            Toast.makeText(this, "NFC intent received NDEF count: " + parcelablesLength, Toast.LENGTH_LONG).show();
+
+            if (parcelablesLength < 1) {
+                Toast.makeText(this, "No NDEF messages found", Toast.LENGTH_LONG).show();
+            } else {
+                readTextFromTag(parcelables);
+            }
 
         }
+    }
+
+    private void readTextFromTag(Parcelable[] parcelables) {
+        NdefMessage message = (NdefMessage)parcelables[0];
+
+        NdefRecord records[] = message.getRecords();
+
+        if (records == null || records.length < 0) {
+            Toast.makeText(this, "No message", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        byte payload[] =  records[0].getPayload();
+        String textEncoding = new String(payload);
+
+        tv.setText(textEncoding);
     }
 
     @Override
