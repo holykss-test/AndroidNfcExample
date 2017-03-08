@@ -35,7 +35,10 @@ public class MainActivity extends AppCompatActivity {
     protected void onNewIntent(Intent intent) {
         super.onNewIntent(intent);
 
-        Toast.makeText(this, "NFC intent received", Toast.LENGTH_LONG).show();
+        if (intent.hasExtra(NfcAdapter.EXTRA_TAG)) {
+            Toast.makeText(this, "NFC intent received", Toast.LENGTH_LONG).show();
+
+        }
     }
 
     @Override
