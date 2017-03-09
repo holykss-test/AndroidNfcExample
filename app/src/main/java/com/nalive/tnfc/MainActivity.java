@@ -14,6 +14,7 @@ import android.os.Parcelable;
 import android.support.annotation.NonNull;
 import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
+import android.widget.CompoundButton;
 import android.widget.EditText;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -26,7 +27,7 @@ public class MainActivity extends AppCompatActivity {
 
     private static final String TAG = MainActivity.class.getSimpleName();
     TextView tv;
-    ToggleButton toggleButton;
+    ToggleButton toggleWrite;
     EditText editText;
     private NfcAdapter nfc;
 
@@ -36,7 +37,7 @@ public class MainActivity extends AppCompatActivity {
         setContentView(R.layout.activity_main);
 
         tv = (TextView) findViewById(R.id.tv);
-        toggleButton = (ToggleButton) findViewById(R.id.toggleButton);
+        toggleWrite = (ToggleButton) findViewById(R.id.toggleButton);
         editText = (EditText) findViewById(R.id.editText);
 
         nfc = NfcAdapter.getDefaultAdapter(this);
@@ -48,9 +49,23 @@ public class MainActivity extends AppCompatActivity {
             tv.setText("NFC is ok");
         }
 
-        toggleButton.setTextOff("READ");
-        toggleButton.setTextOn("WRITE");
-        toggleButton.setChecked(false);
+        toggleWrite.setTextOff("READ");
+        toggleWrite.setTextOn("WRITE");
+
+        toggleWrite.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
+            @Override
+            public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
+                if (isChecked) {
+                    editText.setEnabled(true);
+
+                } else {
+                    editText.setEnabled(false);
+                    editText.setText("");
+                }
+            }
+        });
+
+        toggleWrite.setChecked(false);
     }
 
     @Override
@@ -65,51 +80,25 @@ public class MainActivity extends AppCompatActivity {
 
             Toast.makeText(this, "NFC intent received NDEF count: " + parcelablesLength, Toast.LENGTH_LONG).show();
 
+            if (toggleWrite.isChecked()) {
+                write(intent.<Tag>getParcelableExtra(NfcAdapter.EXTRA_TAG));
+                return;
+            }
+
             if (parcelablesLength < 1) {
                 Toast.makeText(this, "No NDEF messages found", Toast.LENGTH_LONG).show();
             } else {
                 readTextFromTag(parcelables);
             }
-
         }
     }
 
-    private void readTextFromTag(Parcelable[] parcelables) {
-        NdefMessage message = (NdefMessage)parcelables[0];
-
-        NdefRecord records[] = message.getRecords();
-
-        if (records == null || records.length < 0) {
-            Toast.makeText(this, "No message", Toast.LENGTH_SHORT).show();
-            return;
-        }
-
-        byte payload[] =  records[0].getPayload();
-        String textEncoding = new String(payload);
-
-        tv.setText(textEncoding);
-    }
-
-    @Override
-    protected void onResume() {
-        super.onResume();
-
-        Intent intent = new Intent(this, MainActivity.class);
-        intent.addFlags(Intent.FLAG_RECEIVER_REPLACE_PENDING);
-
-        PendingIntent pendingIntent = PendingIntent.getActivity(this, 0, intent, 0);
-        IntentFilter filters[] = new IntentFilter[]{};
-
-        nfc.enableForegroundDispatch(this, pendingIntent, filters, null);
+    private void write(Tag tag){
+        NdefMessage message = createMessage(editText.getText().toString());
+        writeMessage(tag, message);
 
     }
 
-    @Override
-    protected void onPause() {
-        nfc.disableForegroundDispatch(this);
-
-        super.onPause();
-    }
 
     private void formatTag(@NonNull Tag tag, NdefMessage message) {
         try {
@@ -141,6 +130,7 @@ public class MainActivity extends AppCompatActivity {
                 if (!ndef.isWritable()) {
                     Toast.makeText(this, "Tag is not wratable", Toast.LENGTH_SHORT).show();
                 }
+                ndef.writeNdefMessage(message);
             }
         } catch (Exception e) {
             Log.e("Write Tag", e.getMessage());
@@ -172,6 +162,42 @@ public class MainActivity extends AppCompatActivity {
         });
 
         return message;
+    }
+    private void readTextFromTag(Parcelable[] parcelables) {
+        NdefMessage message = (NdefMessage)parcelables[0];
+
+        NdefRecord records[] = message.getRecords();
+
+        if (records == null || records.length < 0) {
+            Toast.makeText(this, "No message", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        byte payload[] =  records[0].getPayload();
+        String textEncoding = new String(payload);
+
+        editText.setText(textEncoding);
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+
+        Intent intent = new Intent(this, MainActivity.class);
+        intent.addFlags(Intent.FLAG_RECEIVER_REPLACE_PENDING);
+
+        PendingIntent pendingIntent = PendingIntent.getActivity(this, 0, intent, 0);
+        IntentFilter filters[] = new IntentFilter[]{};
+
+        nfc.enableForegroundDispatch(this, pendingIntent, filters, null);
+
+    }
+
+    @Override
+    protected void onPause() {
+        nfc.disableForegroundDispatch(this);
+
+        super.onPause();
     }
 }
 
