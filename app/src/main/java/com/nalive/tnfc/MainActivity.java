@@ -14,8 +14,10 @@ import android.os.Parcelable;
 import android.support.annotation.NonNull;
 import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
+import android.widget.EditText;
 import android.widget.TextView;
 import android.widget.Toast;
+import android.widget.ToggleButton;
 
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
@@ -24,6 +26,8 @@ public class MainActivity extends AppCompatActivity {
 
     private static final String TAG = MainActivity.class.getSimpleName();
     TextView tv;
+    ToggleButton toggleButton;
+    EditText editText;
     private NfcAdapter nfc;
 
     @Override
@@ -32,6 +36,8 @@ public class MainActivity extends AppCompatActivity {
         setContentView(R.layout.activity_main);
 
         tv = (TextView) findViewById(R.id.tv);
+        toggleButton = (ToggleButton) findViewById(R.id.toggleButton);
+        editText = (EditText) findViewById(R.id.editText);
 
         nfc = NfcAdapter.getDefaultAdapter(this);
         if (nfc == null) {
@@ -41,6 +47,10 @@ public class MainActivity extends AppCompatActivity {
         } else {
             tv.setText("NFC is ok");
         }
+
+        toggleButton.setTextOff("READ");
+        toggleButton.setTextOn("WRITE");
+        toggleButton.setChecked(false);
     }
 
     @Override
